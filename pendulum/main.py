@@ -56,8 +56,8 @@ class Pendulum(object): #Объявление класса маятника
         self.E_pot = 0
         self.E = 0
 
-        self.friction = False
-        self.kFric = 0.1
+        self.friction = False #Переключатель трения
+        self.kFric = 0.1 #Коэффициент трения
 
         self.fig = plt.figure() #окно для рисования
         self.fig.suptitle(title) #подзаголовок окна
@@ -72,8 +72,8 @@ class Pendulum(object): #Объявление класса маятника
         #self.y = (self.x**2)/(2*self.l)
         self.y = -np.sqrt((self.l-self.x)*(self.l+self.x))+self.l #Вычисление у при известном х
 
-        if (self.friction):
-            self.p = self.p - self.p*self.kFric*self.dt
+        if (self.friction): #если трение включено
+            self.p = self.p - self.p*self.kFric*self.dt #рассчёт трения
 
         self.lineX = [self.x, self.staticPointX]    #Координаты палки маятника
         self.lineY = [self.y, self.staticPointY]    #Содержат её начало и конец
