@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
+import matplotlib.gridspec as gridspec
 
 class GraphBase(object): #Класс графического окна. Используется для графиков и для визуализации
     def __init__(self, xmin = -1, xmax = 1, ymin = -1, ymax = 1, title = '', xlabel = '', ylabel = '', r=3):
@@ -47,7 +48,7 @@ class Pendulum(object): #Объявление класса маятника
         self.x = self.x - self.p*self.dt/2 #вычисление начального х
 
         self.staticPointX = 0 #Точка, куда прикреплена палка маятника
-        self.staticPointY = 3
+        self.staticPointY = 7
         self.l = self.staticPointY - self.y #Длина палки
         self.lineX = [0] #кортежи для координат палки маятника
         self.lineY = [0]
@@ -59,8 +60,11 @@ class Pendulum(object): #Объявление класса маятника
         self.friction = False #Переключатель трения
         self.kFric = 0.1 #Коэффициент трения
 
-        self.fig = plt.figure() #окно для рисования
+        n = 3
+        #self.fig, self.axs = plt.subplots(2, 3, figsize=(2*n, 3*n))
+        self.fig = plt.figure(figsize=(3*n, 2*n)) #окно для рисования
         self.fig.suptitle(title) #подзаголовок окна
+        self.grs = gridspec.GridSpec(nrows=2, ncols=3, figure=self.fig) #Средство размещения графиков
         plt.gcf().canvas.set_window_title('Задание 1 — маятник') #Заголовок окна
         
 
@@ -79,7 +83,7 @@ class Pendulum(object): #Объявление класса маятника
         self.lineY = [self.y, self.staticPointY]    #Содержат её начало и конец
 
         self.E_kin = self.p**2/2  #Подсчёт
-        self.E_pot = self.y*2.3   #энергий
+        self.E_pot = self.y*5.75   #энергий
         self.E = self.E_kin + self.E_pot
     
     #Функции, передающие нужные аргументы соответствующей animate() или animate_plot()
@@ -103,8 +107,8 @@ class Pendulum(object): #Объявление класса маятника
     def startDraw(self): #Создание экземпляров графических областей и запуск рисования в них
 
         #Запуск визуализации маятника
-        plt.subplot(2, 3, 1) #Выбор места на self.fig
-        self.visualisation = GraphBase(xmin=-2, xmax=2, ymin=-0.5, ymax=2, r=10,
+        self.fig_ax_1 = self.fig.add_subplot(self.grs[:, 0]) #Выбор места на self.fig
+        self.visualisation = GraphBase(xmin=-2, xmax=2, ymin=-1, ymax=8, r=10,
             title='Визуализация', xlabel='координата х', ylabel='координата у') #Создание объекта. Указан размер графика и радиус шарика
         anim = FuncAnimation(self.fig, self.visualisation.animate, fargs=(self.nextFrameCalc, self.visualisation_args),
             frames=2000, interval=pdl.dt*1000, blit=True) #Запуск рисование на этом графике
@@ -112,28 +116,29 @@ class Pendulum(object): #Объявление класса маятника
             #и функция, передающая нужные данные в функцию self.visualisation.animate
 
         #График кинетической энергии
-        plt.subplot(2, 3, 2) #Всё аналогично описанию выше
+        #Всё аналогично описанию выше
+        self.fig_ax_2 = self.fig.add_subplot(self.grs[0,1])
         self.eKinPlot = GraphBase(xmin=0, xmax=np.pi*12, ymin=0, ymax=1,
             title='Кинетическая энергия', xlabel='время t', ylabel='энергия Екин')
         anim = FuncAnimation(self.fig, self.eKinPlot.animate_plot, fargs=(self.eKinPlot_args, ),
             frames=2000, interval=pdl.dt*1000, blit=True, repeat=False)
 
         #График потенциальной энергии
-        plt.subplot(2, 3, 5) 
+        self.fig_ax_5 = self.fig.add_subplot(self.grs[1,1])
         self.ePotPlot = GraphBase(xmin=0, xmax=np.pi*12, ymin=0, ymax=1,
             title='Потенцальная энергия', xlabel='время t', ylabel='энергия Епот')
         anim = FuncAnimation(self.fig, self.ePotPlot.animate_plot, fargs=(self.ePotPlot_args, ),
             frames=2000, interval=pdl.dt*1000, blit=True, repeat=False)
 
         #График полной энергии
-        plt.subplot(2, 3, 3) 
+        self.fig_ax_3 = self.fig.add_subplot(self.grs[0,2])
         self.ePlot = GraphBase(xmin=0, xmax=np.pi*12, ymin=0, ymax=1.2,
             title='Полная энергия', xlabel='время t', ylabel='энергия Е')
         anim = FuncAnimation(self.fig, self.ePlot.animate_plot, fargs=(self.ePlot_args, ),
             frames=2000, interval=pdl.dt*1000, blit=True, repeat=False)
 
         #Фазовая плоскость
-        plt.subplot(2, 3, 4)
+        self.fig_ax_4 = self.fig.add_subplot(self.grs[1,2])
         self.phasePlot = GraphBase(xmin=-2, xmax=2, ymin=-2, ymax=2,
             title='Фазовая плоскость', xlabel='координата х', ylabel='импульс р')
         anim = FuncAnimation(self.fig, self.phasePlot.animate_plot, fargs=(self.phasePlot_args, ),
