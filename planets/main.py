@@ -6,12 +6,13 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.gridspec as gridspec
 
 class GBCircle(object): #Круглый объект - для визуализации или отрисовки графиков
-    def __init__(self, r=3):
-        self.x = 0 #Координаты
-        self.y = 0
-        self.color = 'k-' #Цвет
+    def __init__(self, r=3, color='r'):
+        #self.x = 0 #Координаты
+        #self.y = 0
+        self.color = color #Цвет
         self.r = r #Радиус
-        self.point, = plt.plot([], [], self.color, ms=self.r) #средство отображение объекта
+        self.point, = plt.plot([], [], 'ro', ms=self.r, color=self.color) #средство отображение объекта
+        self.line, = plt.plot([], [], 'k-', lw=0.2)
         self.track = False #След откл.
         self.xData, self.yData = [], [] #Данные для рисования следа
     
@@ -19,9 +20,10 @@ class GBCircle(object): #Круглый объект - для визуализа
         if (self.track): #Если след включён
             self.xData.append(x) #Добавление новой точки к траектории
             self.yData.append(y)
-            self.point.set_data(self.xData, self.yData) #Отображение этих данных
-        else: #Если след отключен
-            self.point.set_data(x, y) #Отображение текущих координат
+            self.line.set_data(self.xData, self.yData) #Отображение этих данных
+
+        self.point.set_data(x, y) #Отображение текущих координат
+
 
 class GraphBase(object): #Общий класс графического окна. Используется для графиков и визуализации
     def __init__(self, xmin = -1, xmax = 1, ymin = -1, ymax = 1, title = '', xlabel = '', ylabel = '', r=3):
@@ -35,20 +37,6 @@ class GraphBase(object): #Общий класс графического окн�
         plt.ylabel(ylabel, fontsize=6)
 
         self.r = r #Радиус точки графика/объекта визуализации
-
-class GBVisualisation(GraphBase): #Класс окна визуализации
-    def __init__(self, xmin = -1, xmax = 1, ymin = -1, ymax = 1, title = '', xlabel = '', ylabel = '', r=3):
-        GraphBase.__init__(self, xmin, xmax, ymin, ymax, title, xlabel, ylabel, r)
-
-        self.planet = GBCircle(self.r) #Создание планеты
-    
-    def animate(self, i, calsFunc, argsFunc): #Функция, рисующая визуализацию
-        calsFunc(i) #Функия, изменяющая все папаметры системы
-
-        x, y = argsFunc() #Функция, передающая нужные данные о системе
-        self.planet.draw(x, y) #Рисование планеты
-
-        return self.planet.point,  #Для обновления не всей области рисования, а только изменённой
 
 class GBPlot(GraphBase): #Класс окна графика
     def __init__(self, xmin = -1, xmax = 1, ymin = -1, ymax = 1, title = '', xlabel = '', ylabel = '', r=3):
@@ -68,14 +56,36 @@ class GBPlot(GraphBase): #Класс окна графика
 
         return self.point, self.line, #Для обновления не всей области рисования, а только изменённой
 
+class GBVisualisation(GraphBase): #Класс окна визуализации
+    def __init__(self, xmin = -1, xmax = 1, ymin = -1, ymax = 1, title = '', xlabel = '', ylabel = '', r=3):
+        GraphBase.__init__(self, xmin, xmax, ymin, ymax, title, xlabel, ylabel, r)
+
+        self.planet = GBCircle(r=self.r, color='#1D1764') #Создание планеты
+        self.planet.track = True
+        self.sun = GBCircle(r=15, color='#FFE354')
+
+    
+    def animate(self, i, calsFunc, argsFunc): #Функция, рисующая визуализацию
+        calsFunc(i) #Функия, изменяющая все папаметры системы
+
+        x, y = argsFunc() #Функция, передающая нужные данные о системе
+        self.planet.draw(x, y) #Рисование планеты
+        self.sun.draw(0, 0)
+
+        return self.planet.point, self.planet.line, self.sun.point,  #Для обновления не всей области рисования, а только изменённой
+
 
 class Planet(object): #Объявление класса планеты
     def __init__(self, title = ''): #Начальные данные
-        self.x = 1 #координаты
+        self.x = 1.5 #координаты
         self.y = 0
-        self.p = 1 #импульс
+        self.vx = 0
+        self.vy = 0.6
         self.t = 0 #время
-        self.dt = 0.02 #шаг времени
+        self.dt = 0.01 #шаг времени
+        self.r = 0
+        self.alpha = 1
+        self.ax, self.ay = 0, 0
 
         self.staticPointX = 0 #Центр вращения
         self.staticPointY = 7
@@ -85,7 +95,7 @@ class Planet(object): #Объявление класса планеты
         self.E_pot = 0
         self.E = 0
 
-        n = 3
+        n = 2.5
         self.fig = plt.figure(figsize=(3*n, 3*n)) #окно для рисования
         self.fig.suptitle(title) #подзаголовок окна
         self.grs = gridspec.GridSpec(nrows=3, ncols=3, figure=self.fig) #Средство размещения графиков
@@ -94,22 +104,20 @@ class Planet(object): #Объявление класса планеты
 
     def nextFrameCalc(self, i):
         
-        pass
-        #self.t = self.dt * i #Изменение времени
-        #self.x = self.x + self.p*self.dt  #Вычисление угла отклонения
-        #self.p = self.p - np.sin(self.x)*self.dt  #и импульса через время dt
-        #self.y = (self.x**2)/(2*self.l)
-        #self.y = -np.sqrt((self.l-self.x)*(self.l+self.x))+self.l #Вычисление у при известном х
+        self.t = self.dt * i #Изменение времени
+        self.x = self.x - self.vx*self.dt/2
+        self.y = self.y - self.vy*self.dt/2
 
-        #if (self.friction): #если трение включено
-        #    self.p = self.p - self.p*self.kFric*self.dt #рассчёт трения
+        self.x = self.x + self.vx*self.dt
+        self.y = self.y + self.vy*self.dt
 
-        #self.lineX = [self.x, self.staticPointX]    #Координаты палки маятника
-        #self.lineY = [self.y, self.staticPointY]    #Содержат её начало и конец
+        self.r = np.sqrt(self.x**2 + self.y**2)
+        self.ax = -self.alpha*self.x/self.r**3
+        self.ay = -self.alpha*self.y/self.r**3
 
-        #self.E_kin = self.p**2/2  #Подсчёт
-        #self.E_pot = self.y*5.75   #энергий
-        #self.E = self.E_kin + self.E_pot
+        self.vx = self.vx + self.ax*self.dt
+        self.vy = self.vy + self.ay*self.dt
+        
     
     #Функции, передающие нужные аргументы соответствующей animate() или animate_plot()
 
@@ -133,7 +141,7 @@ class Planet(object): #Объявление класса планеты
 
         #Запуск визуализации
         self.fig_ax_1 = self.fig.add_subplot(self.grs[0:2, 0:2]) #Выбор места на self.fig
-        self.visualisation = GBVisualisation(xmin=-2, xmax=2, ymin=-2, ymax=2, r=10,
+        self.visualisation = GBVisualisation(xmin=-2, xmax=2, ymin=-2, ymax=2, r=5,
             title='Визуализация', xlabel='координата х', ylabel='координата у') #Создание объекта. Указан размер графика и радиус планеты
         FuncAnimation(self.fig, self.visualisation.animate, fargs=(self.nextFrameCalc, self.visualisation_args),
             frames=2000, interval=self.dt*1000, blit=True) #Запуск рисование на этом графике
