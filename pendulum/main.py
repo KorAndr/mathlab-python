@@ -60,7 +60,8 @@ class Pendulum(object): #Объявление класса маятника
         self.kFric = 0.1
 
         self.fig = plt.figure() #окно для рисования
-        self.fig.suptitle(title)
+        self.fig.suptitle(title) #подзаголовок окна
+        plt.gcf().canvas.set_window_title('Задание 1 — маятник') #Заголовок окна
         
 
     def nextFrameCalc(self, i):
