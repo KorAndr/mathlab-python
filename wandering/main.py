@@ -57,42 +57,73 @@ class Surface(object): #Объявление класса частицы
 
         self.pNomber = 100
 
-        n = 2 #коэффициент масштабирования
-        self.fig = plt.figure(figsize=(3*n, 3*n)) #окно для рисования
+        self.averageX, self.averageXX = 0, 0
+
+        n = 3 #коэффициент масштабирования
+        self.fig = plt.figure(figsize=(3*n, 2*n)) #окно для рисования
         self.fig.suptitle(title) #подзаголовок окна
-        self.grs = gridspec.GridSpec(nrows=1, ncols=1, figure=self.fig) #Средство размещения графиков
+        self.grs = gridspec.GridSpec(nrows=2, ncols=3, figure=self.fig) #Средство размещения графиков
         plt.gcf().canvas.set_window_title('Задание 3 — одномерные блуждания') #Заголовок окна
 
         self.particles = []
+
+
         for i in range(0, self.pNomber):
             x = 0
             y = -1*self.pNomber/2 + i
             prt = Particle(x, y, vx=0.1, vy=0)
             self.particles.append(prt)
+        
     
     def nextFrameCalc(self, i): #Вычисление параметров системы
         self.t = self.dt * i #Изменение времени
 
         for prt in self.particles:
             prt.moving()
+
+        self.averageX = 0
+        self.averageXX = 0
+        for prt in self.particles:
+            self.averageX += prt.x
+            self.averageXX += prt.x**2
+        self.averageX = self.averageX/self.pNomber 
+        self.averageXX = self.averageXX/self.pNomber       
     
     #Функции, передающие нужные аргументы соответствующей animate()
 
     def visualisation_args(self): #Для визуализации
         return self.particles   #массив частиц     
 
+    def averageX_args(self):
+        return self.t, self.averageX
+
+    def averageXX_args(self):
+        return self.t, self.averageXX
+
     def startDraw(self): #Создание экземпляров графических областей и запуск рисования в них
 
         #Запуск визуализации
         limit = self.pNomber/2 + 1
 
-        self.fig_ax_1 = self.fig.add_subplot(self.grs[0, 0]) #Выбор места на self.fig
+        self.fig_ax_1 = self.fig.add_subplot(self.grs[:, :2]) #Выбор места на self.fig
         self.visualisation = Visualisation(self.pNomber, xmin=-10, xmax=10, ymin=-limit, ymax=limit, r = 3,
             title='Визуализация', xlabel='координата х', ylabel='координата у') #Создание объекта. Указан размер графика
         FuncAnimation(self.fig, self.visualisation.animate, fargs=(self.nextFrameCalc, self.visualisation_args),
-            frames=3000, interval=self.dt*1000, blit=True) #Запуск рисование на этом графике
+            frames=3000, interval=self.dt*1000, blit=True) #Запуск рисования на этом графике
             #В аргументах передаётся считающая функция, которая изменяет все параметры системы,
             #и функция, передающая нужные данные в функцию self.visualisation.animate
+
+        self.fig_ax_2 = self.fig.add_subplot(self.grs[0, 2])
+        self.averageXPlot = gbl.Plot(xmin=0, xmax=30, ymin=-1, ymax=1, r = 3,
+            title='Среднее смещение', xlabel='время t', ylabel='<x(t)>') 
+        FuncAnimation(self.fig, self.averageXPlot.animate, fargs=(self.averageX_args, ),
+            frames=3000, interval=self.dt*1000, blit=True) 
+        
+        self.fig_ax_3 = self.fig.add_subplot(self.grs[1, 2])
+        self.averageXXPlot = gbl.Plot(xmin=0, xmax=30, ymin=0, ymax=5, r = 3,
+            title='Среднеквадратичное смещение', xlabel='время t', ylabel='<x^2(t)>') 
+        FuncAnimation(self.fig, self.averageXXPlot.animate, fargs=(self.averageXX_args, ),
+            frames=3000, interval=self.dt*1000, blit=True)
      
 
 
